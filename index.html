@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Clock</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0e0d0;
+        }
+        .container {
+            height: 460px;
+            width: 220px;
+            background-color: rgba(70, 60, 50, 0.9);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .timer {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .controls {
+            padding: 20px;
+        }
+        .time-set {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .time-label {
+            color: #aaa;
+            font-size: 14px;
+        }
+        .time-value {
+            color: #4dd0e1;
+            font-size: 16px;
+        }
+        .time-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .time-button {
+            width: 20px;
+            height: 20px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .main-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .main-button {
+            padding: 10px 20px;
+            background-color: #4dd0e1;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .session-label {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .break .timer, .break .main-button {
+            background-color: #ff7043;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="timer" id="timer">25:00</div>
+        <div class="controls">
+            <div class="session-label" id="sessionLabel">Session 1</div>
+            <div class="time-set">
+                <div>
+                    <div class="time-label">session time</div>
+                    <div class="time-value" id="sessionTime">25 min</div>
+                    <div class="time-buttons">
+                        <button class="time-button" id="sessionMinus">-</button>
+                        <button class="time-button" id="sessionPlus">+</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="time-label">break time</div>
+                    <div class="time-value" id="breakTime">5 min</div>
+                    <div class="time-buttons">
+                        <button class="time-button" id="breakMinus">-</button>
+                        <button class="time-button" id="breakPlus">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="main-buttons">
+                <button class="main-button" id="startPause">Start</button>
+                <button class="main-button" id="reset">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const timer = document.getElementById('timer');
+        const sessionLabel = document.getElementById('sessionLabel');
+        const sessionTimeDisplay = document.getElementById('sessionTime');
+        const breakTimeDisplay = document.getElementById('breakTime');
+        const sessionMinus = document.getElementById('sessionMinus');
+        const sessionPlus = document.getElementById('sessionPlus');
+        const breakMinus = document.getElementById('breakMinus');
+        const breakPlus = document.getElementById('breakPlus');
+        const startPauseButton = document.getElementById('startPause');
+        const resetButton = document.getElementById('reset');
+
+        let sessionTime = 25;
+        let breakTime = 5;
+        let timeLeft = sessionTime * 60;
+        let isRunning = false;
+        let isSession = true;
+        let intervalId;
+        let sessionCount = 1;
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                clearInterval(intervalId);
+                startPauseButton.textContent = 'Start';
+            } else {
+                intervalId = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateDisplay();
+                    } else {
+                        if (isSession) {
+                            isSession = false;
+                            timeLeft = breakTime * 60;
+                            sessionLabel.textContent = 'Break!';
+                            document.querySelector('.container').classList.add('break');
+                        } else {
+                            isSession = true;
+                            timeLeft = sessionTime * 60;
+                            sessionCount++;
+                            sessionLabel.textContent = `Session ${sessionCount}`;
+                            document.querySelector('.container').classList.remove('break');
+                        }
+                    }
+                }, 1000);
+                startPauseButton.textContent = 'Pause';
+            }
+            isRunning = !isRunning;
+            sessionMinus.disabled = sessionPlus.disabled = breakMinus.disabled = breakPlus.disabled = isRunning;
+        }
+
+        function reset() {
+            clearInterval(intervalId);
+            isRunning = false;
+            isSession = true;
+            sessionCount = 1;
+            timeLeft = sessionTime * 60;
+            updateDisplay();
+            sessionLabel.textContent = 'Session 1';
+            startPauseButton.textContent = 'Start';
+            document.querySelector('.container').classList.remove('break');
+            sessionMinus.disabled = sessionPlus.disabled = breakMinus.disabled = breakPlus.disabled = false;
+        }
+
+        function updateSessionTime(change) {
+            if (!isRunning && sessionTime + change > 0 && sessionTime + change <= 60) {
+                sessionTime += change;
+                sessionTimeDisplay.textContent = `${sessionTime} min`;
+                if (isSession) {
+                    timeLeft = sessionTime * 60;
+                    updateDisplay();
+                }
+            }
+        }
+
+        function updateBreakTime(change) {
+            if (!isRunning && breakTime + change > 0 && breakTime + change <= 60) {
+                breakTime += change;
+                breakTimeDisplay.textContent = `${breakTime} min`;
+                if (!isSession) {
+                    timeLeft = breakTime * 60;
+                    updateDisplay();
+                }
+            }
+        }
+
+        sessionMinus.addEventListener('click', () => updateSessionTime(-1));
+        sessionPlus.addEventListener('click', () => updateSessionTime(1));
+        breakMinus.addEventListener('click', () => updateBreakTime(-1));
+        breakPlus.addEventListener('click', () => updateBreakTime(1));
+        startPauseButton.addEventListener('click', toggleTimer);
+        resetButton.addEventListener('click', reset);
+
+        updateDisplay();
+    </script>
+</body>
+</html>
